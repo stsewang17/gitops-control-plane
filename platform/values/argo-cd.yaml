@@ -1,0 +1,40 @@
+# Argo CD Helm values. Used once by the helm install in Step 2, then by the self-managed argo-cd Application.
+global:
+  domain: argocd.localhost
+
+configs:
+  cm:
+    # Track resources by annotation so Argo CD and Crossplane do not fight over labels.
+    application.resourceTrackingMethod: annotation
+    timeout.reconciliation: 60s
+
+    # Health checks. More entries are added here in Lab 2 as Crossplane arrives.
+    resource.customizations: |
+      # Child Applications report real health, so app-of-apps sync waves wait for them.
+      argoproj.io/Application:
+        health.lua: |
+          hs = {status = "Progressing", message = ""}
+          if obj.status ~= nil and obj.status.health ~= nil then
+            hs.status = obj.status.health.status
+            if obj.status.health.message ~= nil then
+              hs.message = obj.status.health.message
+            end
+          end
+          return hs
+
+# SSO is out of scope for the lab; production enables Dex or OIDC here.
+dex:
+  enabled: false
+
+controller:
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {memory: 1Gi}
+repoServer:
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 512Mi}
+server:
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 256Mi}

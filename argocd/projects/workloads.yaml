@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: workloads
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Application teams and their infrastructure claims
+  sourceRepos:
+    - https://github.com/stsewang17/gitops-control-plane.git
+  destinations:
+    - {server: https://kubernetes.default.svc, namespace: gemma}
+    - {server: https://kubernetes.default.svc, namespace: default}
+  # Teams may create their namespace and nothing else cluster-wide.
+  clusterResourceWhitelist:
+    - {group: "", kind: Namespace}
+  namespaceResourceWhitelist:
+    - {group: "", kind: Service}
+    - {group: "", kind: ServiceAccount}
+    - {group: apps, kind: Deployment}
+    - {group: policy, kind: PodDisruptionBudget}
+    - {group: networking.k8s.io, kind: NetworkPolicy}
+    - {group: argoproj.io, kind: Rollout}
+    - {group: argoproj.io, kind: AnalysisTemplate}
+    - {group: monitoring.coreos.com, kind: PodMonitor}
+    - {group: finplatform.io, kind: PostgresBucketClaim}
