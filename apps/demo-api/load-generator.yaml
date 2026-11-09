@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-load-generator
+  namespace: demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-load-generator
+  template:
+    metadata:
+      labels:
+        app: demo-load-generator
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: curl
+          image: curlimages/curl:8.23.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              while true; do
+                curl -s -o /dev/null -w "%{http_code}\n" http://demo-api.demo.svc.cluster.local/
+                sleep 0.1
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

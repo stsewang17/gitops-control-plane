@@ -1,0 +1,102 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: demo-api
+  namespace: demo
+spec:
+  replicas: 4
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: demo-api
+  template:
+    metadata:
+      labels:
+        app: demo-api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: demo-api
+      containers:
+        - name: podinfo
+          image: ghcr.io/stefanprodan/podinfo:6.16.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 9898
+            - name: metrics
+              containerPort: 9797
+          env:
+            - name: PODINFO_PORT_METRICS
+              value: "9797"
+            - name: PODINFO_UI_MESSAGE
+              value: "demo-api"
+            # Release lever for the broken-canary demo: "true" returns errors on ~1/3 of requests.
+            - name: PODINFO_RANDOM_ERROR
+              value: "false"
+          # TCP probes: random-error mode would fail HTTP probes on the app port.
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 2
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+  strategy:
+    canary:
+      # Background analysis runs from the first step until the rollout is promoted or aborted.
+      analysis:
+        templates:
+          - templateName: demo-api-success-rate
+        args:
+          - name: namespace
+            value: demo
+          - name: service-name
+            value: demo-api
+          - name: canary-hash
+            valueFrom:
+              podTemplateHashValue: Latest
+      steps:
+        - setWeight: 25
+        - pause: {duration: 30s}
+        - setWeight: 50
+        - pause: {duration: 30s}
+        # Extra step keeps the canary alive long enough for 3 failed measurements.
+        - setWeight: 75
+        - pause: {duration: 30s}

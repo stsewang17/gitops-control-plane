@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: demo-api-success-rate
+  namespace: demo
+spec:
+  args:
+    - name: namespace
+    - name: service-name
+    - name: canary-hash
+  metrics:
+    - name: http-success-rate
+      # Wait for the canary pod to be scraped at least twice (rate() needs 2 samples).
+      initialDelay: 20s
+      interval: 10s
+      # Analysis fails on the 3rd failed measurement.
+      failureLimit: 2
+      # Tolerate empty results while the first canary samples arrive.
+      consecutiveErrorLimit: 6
+      successCondition: result[0] >= 0.95
+      provider:
+        prometheus:
+          address: http://kps-prometheus.monitoring.svc.cluster.local:9090
+          timeout: 10
+          query: |
+            sum(rate(http_requests_total{
+              namespace="{{args.namespace}}",
+              app="{{args.service-name}}",
+              rollouts_pod_template_hash="{{args.canary-hash}}",
+              status=~"2.."
+            }[1m]))
+            /
+            sum(rate(http_requests_total{
+              namespace="{{args.namespace}}",
+              app="{{args.service-name}}",
+              rollouts_pod_template_hash="{{args.canary-hash}}"
+            }[1m]))
