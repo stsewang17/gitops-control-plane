@@ -1,0 +1,19 @@
+installCRDs: true
+keepCRDs: true
+
+controller:
+  # Chart default is 2 with leader election; 1 is enough on a laptop.
+  replicas: 1
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {memory: 256Mi}
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+dashboard:
+  enabled: true
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 128Mi}
