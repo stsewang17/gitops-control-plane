@@ -31,7 +31,7 @@ spec:
               app: demo-api
       containers:
         - name: podinfo
-          image: ghcr.io/stefanprodan/podinfo:6.16.0
+          image: ghcr.io/stefanprodan/podinfo:6.17.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
