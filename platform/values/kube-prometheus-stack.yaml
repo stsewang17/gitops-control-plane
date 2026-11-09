@@ -14,6 +14,14 @@ prometheus:
       requests: {cpu: 100m, memory: 400Mi}
       limits: {memory: 1Gi}
 
+# v0.95.1 (chart 93.0.0 default) was published without an arm64 image; pin until a fixed tag ships.
+prometheusOperator:
+  image:
+    tag: v0.94.0
+  prometheusConfigReloader:
+    image:
+      tag: v0.94.0
+
 # Production: enable with real receivers.
 alertmanager:
   enabled: false
