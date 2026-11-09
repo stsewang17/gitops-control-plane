@@ -10,7 +10,7 @@ spec:
   sourceRepos:
     - https://github.com/stsewang17/gitops-control-plane.git
   destinations:
-    - {server: https://kubernetes.default.svc, namespace: gemma}
+    - {server: https://kubernetes.default.svc, namespace: demo}
     - {server: https://kubernetes.default.svc, namespace: default}
   # Teams may create their namespace and nothing else cluster-wide.
   clusterResourceWhitelist:
