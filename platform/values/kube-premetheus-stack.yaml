@@ -1,0 +1,38 @@
+# Short names: Prometheus service becomes kps-prometheus.monitoring.svc:9090
+fullnameOverride: kps
+
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    retention: 2d
+    # Select every ServiceMonitor/PodMonitor/rule in the cluster, not only ones labelled for this release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests: {cpu: 100m, memory: 400Mi}
+      limits: {memory: 1Gi}
+
+# Production: enable with real receivers.
+alertmanager:
+  enabled: false
+
+# Grafana's generated admin password changes on every Argo CD render and causes endless drift.
+# Production: enable it with admin.existingSecret pointing at a managed Secret.
+grafana:
+  enabled: false
+
+# k3s runs these inside the server process; their endpoints are not scrapeable.
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false
+
+# node-exporter needs a shared host root mount that k3d node containers do not provide.
+nodeExporter:
+  enabled: false
