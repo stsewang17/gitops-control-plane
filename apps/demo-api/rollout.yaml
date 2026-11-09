@@ -45,7 +45,7 @@ spec:
               value: "demo-api"
             # Release lever for the broken-canary demo: "true" returns errors on ~1/3 of requests.
             - name: PODINFO_RANDOM_ERROR
-              value: "false"
+              value: "true"
           # TCP probes: random-error mode would fail HTTP probes on the app port.
           readinessProbe:
             tcpSocket:
