@@ -1,0 +1,12 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-nop
+spec:
+  # Production: pin by digest (provider-nop@sha256:...) so a re-pushed tag cannot change what runs.
+  package: xpkg.crossplane.io/crossplane-contrib/provider-nop:v0.6.0
+  packagePullPolicy: IfNotPresent
+  revisionActivationPolicy: Automatic
+  revisionHistoryLimit: 1
+  runtimeConfigRef:
+    name: small
