@@ -21,7 +21,43 @@ configs:
             end
           end
           return hs
-
+      # Crossplane packages, XRDs, compositions and managed resources.
+      "*.crossplane.io/*":
+        health.lua: |
+          hs = {status = "Progressing", message = "Waiting for Crossplane"}
+          local noStatus = {Composition = true, CompositionRevision = true, DeploymentRuntimeConfig = true,
+                            ProviderConfig = true, ProviderConfigUsage = true, EnvironmentConfig = true}
+          if obj.status == nil or obj.status.conditions == nil then
+            if noStatus[obj.kind] then
+              hs.status = "Healthy"
+              hs.message = "No status to assess"
+            end
+            return hs
+          end
+          local c = {}
+          for _, cond in ipairs(obj.status.conditions) do c[cond.type] = cond end
+          if c.Synced ~= nil and c.Synced.status == "False" then
+            return {status = "Degraded", message = c.Synced.message or "Sync failed"}
+          end
+          if c.LastAsyncOperation ~= nil and c.LastAsyncOperation.status == "False" then
+            return {status = "Degraded", message = c.LastAsyncOperation.message or "Async operation failed"}
+          end
+          if c.Installed ~= nil then
+            if c.Installed.status == "True" and c.Healthy ~= nil and c.Healthy.status == "True" then
+              return {status = "Healthy", message = "Package installed and healthy"}
+            end
+            return hs
+          end
+          if c.Established ~= nil then
+            if c.Established.status == "True" then
+              return {status = "Healthy", message = "XRD established"}
+            end
+            return hs
+          end
+          if c.Ready ~= nil and c.Ready.status == "True" then
+            return {status = "Healthy", message = "Resource is ready"}
+          end
+          return hs
 # SSO is out of scope for the lab; production enables Dex or OIDC here.
 dex:
   enabled: false
