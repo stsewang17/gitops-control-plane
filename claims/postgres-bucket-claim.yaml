@@ -1,0 +1,7 @@
+apiVersion: finplatform.io/v1alpha1
+kind: PostgresBucketClaim
+metadata:
+  name: ledger-db-bucket
+  namespace: default
+spec:
+  storageGB: 250
