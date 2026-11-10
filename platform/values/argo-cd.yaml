@@ -58,6 +58,23 @@ configs:
             return {status = "Healthy", message = "Resource is ready"}
           end
           return hs
+      
+      # Developer claims: Healthy only once Crossplane marks them Ready.
+      finplatform.io/*:
+        health.lua: |
+          hs = {status = "Progressing", message = "Waiting for Crossplane to reconcile the claim"}
+          if obj.status ~= nil and obj.status.conditions ~= nil then
+            local c = {}
+            for _, cond in ipairs(obj.status.conditions) do c[cond.type] = cond end
+            if c.Synced ~= nil and c.Synced.status == "False" then
+              hs.status = "Degraded"
+              hs.message = c.Synced.message or "Claim failed to sync"
+            elseif c.Ready ~= nil and c.Ready.status == "True" then
+              hs.status = "Healthy"
+              hs.message = "Claim is ready"
+            end
+          end
+          return hs 
 # SSO is out of scope for the lab; production enables Dex or OIDC here.
 dex:
   enabled: false

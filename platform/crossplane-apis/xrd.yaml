@@ -1,0 +1,45 @@
+# apiextensions.crossplane.io/v1 is the API that supports Claims (Crossplane v2 serves it as a legacy, cluster-scoped XR).
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xpostgresbuckets.finplatform.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  group: finplatform.io
+  names:
+    kind: XPostgresBucket
+    plural: xpostgresbuckets
+  claimNames:
+    kind: PostgresBucketClaim
+    plural: postgresbucketclaims
+  defaultCompositionRef:
+    name: xpostgresbuckets-nop
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      additionalPrinterColumns:
+        - name: STORAGE-GB
+          type: integer
+          jsonPath: .spec.storageGB
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                storageGB:
+                  type: integer
+                  description: Requested storage in GB.
+                  minimum: 10
+                  maximum: 1000
+              required:
+                - storageGB
+            status:
+              type: object
+              properties:
+                provisionedStorageGB:
+                  type: integer
+                  description: Storage value observed on the composed resource.

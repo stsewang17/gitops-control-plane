@@ -1,0 +1,47 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: xpostgresbuckets-nop
+  labels:
+    provider: nop
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  compositeTypeRef:
+    apiVersion: finplatform.io/v1alpha1
+    kind: XPostgresBucket
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: mock-postgres-bucket
+            base:
+              # Cluster-scoped NOP resource, matching the cluster-scoped legacy XR.
+              apiVersion: nop.crossplane.io/v1alpha1
+              kind: ClusterNopResource
+              spec:
+                forProvider:
+                  conditionAfter:
+                    - time: 5s
+                      conditionType: Ready
+                      conditionStatus: "True"
+                      conditionReason: Available
+                  fields:
+                    engine: postgres
+                    region: mock-region-1
+                    storageGB: 0
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.storageGB
+                toFieldPath: spec.forProvider.fields.storageGB
+              - type: ToCompositeFieldPath
+                fromFieldPath: spec.forProvider.fields.storageGB
+                toFieldPath: status.provisionedStorageGB
+    - step: automatically-detect-ready-composed-resources
+      functionRef:
+        name: function-auto-ready
